@@ -1,0 +1,8 @@
+extends base.pug
+
+//- input에 name으로 req.body
+
+block content 
+  form(method="POST", action="/videos/upload")
+    input(name="title", placeholder="Title", required, type="text")
+    input(type="submit", value="Upload Video")
