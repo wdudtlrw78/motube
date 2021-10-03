@@ -1,50 +1,38 @@
-const videos = [
-  {
-    title: 'First Video',
-    rating: 5,
-    comments: 2,
-    createdAt: '2 minutes ago',
-    views: 1,
-    id: 1,
-  },
-  {
-    title: 'Second Video',
-    rating: 5,
-    comments: 2,
-    createdAt: '2 minutes ago',
-    views: 59,
-    id: 2,
-  },
-  {
-    title: 'Third Video',
-    rating: 5,
-    comments: 2,
-    createdAt: '2 minutes ago',
-    views: 59,
-    id: 3,
-  },
-];
+import Video from '../models/Video';
 
-export const trending = (req, res) => {
-  return res.render('home', { pageTitle: 'Home', videos });
+// 1. return의 역할 : 본질적인 return의 역할보다는 function을 마무리짓는 역할로 사용되고 있음.
+// - 이러한 경우 return이 없어도 정상적으로 동작하지만 실수를 방지하기 위해 return을 사용
+// 2. render한 것은 다시 render할 수 없음
+// - redirect(), sendStatus(), end() 등등 포함 (express에서 오류 발생)
+
+export const home = async (req, res) => {
+  try {
+    const videos = await Video.find({});
+    console.log(videos);
+
+    return res.render('home', { pageTitle: 'Home', videos });
+  } catch (error) {
+    return res.render('server-error', { error });
+  }
 }; // render : (pug) html template engine rendering
 
-export const watch = (req, res) => {
+export const watch = async (req, res) => {
   const { id } = req.params;
-  const video = videos[id - 1];
-  return res.render('watch', { pageTitle: `Watching ${video.title}`, video });
+  const video = await Video.findById(id);
+  console.log(video);
+  return res.render('watch', { pageTitle: video.title, video });
 };
 
 export const getEdit = (req, res) => {
   const { id } = req.params;
-  const video = videos[id - 1];
-  return res.render('edit', { pageTitle: `Editing: ${video.title}`, video });
+
+  return res.render('edit', { pageTitle: `Editing: ${video.title}` });
 };
 
 export const postEdit = (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
-  videos[id - 1].title = title;
+
   return res.redirect(`/videos/${id}`);
 };
 
@@ -52,17 +40,18 @@ export const getUpload = (req, res) => {
   return res.render('upload', { pageTitle: 'Upload Video' });
 };
 
-export const postUpload = (req, res) => {
-  const { title } = req.body;
-  const newVideo = {
-    title,
-    rating: 0,
-    comments: 0,
-    createdAt: 'Just now',
-    views: 0,
-    id: videos.length + 1,
-  };
+export const postUpload = async (req, res) => {
+  const { title, description, hashtags } = req.body;
 
-  videos.push(newVideo);
-  return res.redirect('/');
+  try {
+    await Video.create({
+      title,
+      description,
+      hashtags: hashtags.split(',').map((word) => `#${word}`),
+    });
+    return res.redirect('/');
+  } catch (error) {
+    console.log(error);
+    return res.render('upload', { pageTitle: 'Upload Video', errorMessage: error._message });
+  }
 };
